@@ -21,6 +21,7 @@ body.bio { margin:0; background:#fff; color:var(--ink); font: 16px/1.5 -apple-sy
 .actions a { display:flex; align-items:center; justify-content:center; height:52px; border-radius:999px; text-decoration:none; font-weight:700; font-size:15px; }
 .actions .primary { grid-column: 1 / -1; background: var(--accent); color:#fff; }
 .actions .ghost { background: var(--soft); color: var(--ink); }
+.actions a:only-child, .actions .ghost:last-child:nth-child(2) { grid-column: 1 / -1; }
 .section { padding: 26px 0 0; }
 .section .head { display:flex; align-items:center; justify-content:space-between; padding: 0 20px 12px; }
 .section h2 { font-size: 13px; letter-spacing: .12em; font-weight:800; margin:0; text-transform: uppercase; }
