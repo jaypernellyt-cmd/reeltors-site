@@ -1,7 +1,7 @@
-:root { --bg:#FBF8F3; --card:#FFFFFF; --ink:#22201C; --muted:#7A736A; --line:#ECE4D8; --sage:#5E7F68; --sageSoft:#E6EEE6; --terra:#C2674A; --peach:#FBE9DF; }
+:root { --bg:#F4F6FB; --card:#FFFFFF; --ink:#0E1530; --muted:#6B7390; --line:#E4E8F1; --sage:#2457F5; --sageSoft:#EAF0FF; --terra:#2457F5; --peach:#EAF0FF; }
 * { box-sizing: border-box; }
 body { margin:0; background:var(--bg); color:var(--ink); font: 16px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, sans-serif; }
-h1,h2 { font-family: "Fraunces", Georgia, serif; font-weight:600; letter-spacing:-0.01em; margin:0 0 8px; }
+h1,h2 { font-family: -apple-system, BlinkMacSystemFont, Inter, sans-serif; font-weight:800; letter-spacing:-0.02em; margin:0 0 8px; }
 h1 { font-size: 30px; line-height:1.15 } h2 { font-size: 22px }
 .wrap { max-width: 560px; margin: 0 auto; padding: 0 16px 48px; }
 .hero { width:100%; aspect-ratio: 4/3; object-fit: cover; border-radius: 0 0 28px 28px; display:block; background: var(--line); }
@@ -19,3 +19,18 @@ button:disabled { opacity:.6 }
 .small { font-size:12px; color:var(--muted); }
 a { color: var(--sage); }
 .ok { background: var(--sageSoft); }
+.btn { display:block; text-align:center; text-decoration:none; border-radius:999px; padding:16px; font-weight:700; margin-top:10px; }
+.btn.primary { background:var(--terra); color:#fff; }
+.btn.ghost { background:#fff; color:var(--ink); border:1.5px solid var(--line); }
+.video { width:100%; max-height:78vh; aspect-ratio:9/16; object-fit:cover; background:#000; display:block; border-radius:0 0 28px 28px; }
+.stats { display:flex; gap:8px; flex-wrap:wrap; margin:12px 0; }
+.stat { background:var(--sageSoft); color:var(--ink); font-weight:700; border-radius:999px; padding:8px 14px; font-size:14px; }
+.grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:16px; }
+.grid img { width:100%; aspect-ratio:4/3; object-fit:cover; border-radius:14px; display:block; }
+.agent { display:flex; gap:14px; align-items:center; }
+.agent img, .agent .ph { width:64px; height:64px; border-radius:32px; object-fit:cover; background:var(--terra); flex:none; }
+.price { font-size:34px; font-weight:800; letter-spacing:-0.02em; margin:16px 0 0; }
+.cards { display:grid; gap:14px; margin-top:16px; }
+.lcard { display:block; text-decoration:none; color:inherit; background:#fff; border-radius:22px; overflow:hidden; border:1px solid var(--line); }
+.lcard img { width:100%; aspect-ratio:16/10; object-fit:cover; display:block; background:var(--line); }
+.lcard div { padding:14px 16px; }

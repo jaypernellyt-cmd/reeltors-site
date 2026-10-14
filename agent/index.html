@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Homes for sale</title><link rel="stylesheet" href="../style.css" /></head>
+<body><main id="app"><div class="wrap"><p class="muted" style="padding-top:40px">Loading…</p></div></main>
+<script>
+const FN = 'https://avckdteyshfwxndzrgnc.supabase.co/functions/v1/listing-page';
+const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF2Y2tkdGV5c2hmd3huZHpyZ25jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE5ODcxODIsImV4cCI6MjEwNzU2MzE4Mn0.0CipJcXlctwghglZQN5EM84xPmxp23TBRwq37s5xPB0';
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+const money = (n) => (n ? '$' + Math.round(n).toLocaleString('en-US') : '');
+const safe = (u) => (/^https:\/\//i.test(u || '') ? u : null);
+const load = (body) => fetch(FN, { method: 'POST', headers: { apikey: ANON, 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+function agentBlock(a) {
+  if (!a) return '';
+  const book = safe(a.booking_url);
+  const phone = a.phone ? a.phone.replace(/[^0-9+]/g, '') : '';
+  return '<div class="card"><div class="agent">' + (a.headshot_url ? '<img src="' + esc(a.headshot_url) + '" alt="">' : '<div class="ph"></div>') +
+    '<div><h2 style="margin:0">' + esc(a.display_name || 'Your agent') + '</h2><div class="muted">' + esc([a.title, a.company_name].filter(Boolean).join(' · ')) + '</div></div></div>' +
+    (book ? '<a class="btn primary" href="' + esc(book) + '">Schedule a call</a>' : phone ? '<a class="btn primary" href="tel:' + esc(phone) + '">Call ' + esc(a.phone) + '</a>' : '') +
+    (phone ? '<a class="btn ghost" href="sms:' + esc(phone) + '">Text me</a>' : '') +
+    (a.email ? '<a class="btn ghost" href="mailto:' + esc(a.email) + '">Email me</a>' : '') +
+    (a.license_number ? '<p class="small">License ' + esc(a.license_number) + (a.broker_name ? ' · Broker: ' + esc(a.broker_name) : '') + '</p>' : '') +
+    '<p class="small">' + (safe(a.iabs_url) ? '<a href="' + esc(a.iabs_url) + '">Information About Brokerage Services</a>' : '') + (safe(a.consumer_protection_url) ? ' · <a href="' + esc(a.consumer_protection_url) + '">Consumer Protection Notice</a>' : '') + '</p>' +
+    (a.disclosures ? '<p class="small">' + esc(a.disclosures) + '</p>' : '') + (a.equal_housing ? '<p class="small">Equal Housing Opportunity</p>' : '') + '</div>';
+}
+const slug = new URLSearchParams(location.search).get('a') || '';
+const app = document.getElementById('app');
+(async () => {
+  const d = /^[a-z0-9]{6,32}$/.test(slug) ? await load({ agent: slug }) : null;
+  if (!d) { app.innerHTML = '<div class="wrap"><h1 style="padding-top:40px">This page isn’t available</h1></div>'; return; }
+  const a = d.agent || {};
+  if (a.primary_color && /^#[0-9a-f]{6}$/i.test(a.primary_color)) document.documentElement.style.setProperty('--terra', a.primary_color);
+  document.title = (a.display_name || 'Homes') + ' · Homes for sale';
+  app.innerHTML = '<div class="wrap" style="padding-top:28px">' + agentBlock(a) +
+    '<h1 style="margin-top:24px">Homes for sale</h1>' +
+    (d.listings.length ? '<div class="cards">' + d.listings.map((l) => '<a class="lcard" href="../listing/?l=' + encodeURIComponent(l.slug) + '">' + (l.cover_url ? '<img src="' + esc(l.cover_url) + '" alt="" loading="lazy">' : '') + '<div><div class="price" style="font-size:24px;margin:0">' + esc(money(l.price)) + '</div><div><b>' + esc(l.address_line) + '</b></div><div class="muted">' + esc([l.city, l.beds && l.beds + ' bd', l.baths && l.baths + ' ba', l.sqft && Number(l.sqft).toLocaleString('en-US') + ' sq ft'].filter(Boolean).join(' · ')) + '</div></div></a>').join('') + '</div>' : '<p class="muted">No published listings right now.</p>') +
+    '<p class="small" style="margin-top:24px">Made with Reeltors · <a href="../privacy/">Privacy</a></p></div>';
+})();
+</script></body></html>
