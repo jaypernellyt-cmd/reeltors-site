@@ -1,14 +1,9 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Home for sale</title><link rel="stylesheet" href="../style.css" /></head>
+<title>Home for sale</title><link rel="stylesheet" href="../style.css" /><link rel="stylesheet" href="../bio.css" /></head>
 <body><main id="app"><div class="wrap"><p class="muted" style="padding-top:40px">Loading…</p></div></main>
+<script src="../common.js"></script>
 <script>
-const FN = 'https://avckdteyshfwxndzrgnc.supabase.co/functions/v1/listing-page';
-const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF2Y2tkdGV5c2hmd3huZHpyZ25jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE5ODcxODIsImV4cCI6MjEwNzU2MzE4Mn0.0CipJcXlctwghglZQN5EM84xPmxp23TBRwq37s5xPB0';
-const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
-const money = (n) => (n ? '$' + Math.round(n).toLocaleString('en-US') : '');
-const safe = (u) => (/^https:\/\//i.test(u || '') ? u : null);
-const load = (body) => fetch(FN, { method: 'POST', headers: { apikey: ANON, 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
 function agentBlock(a) {
   if (!a) return '';
   const book = safe(a.booking_url);
@@ -28,7 +23,10 @@ const app = document.getElementById('app');
   const d = /^[a-z0-9]{6,32}$/.test(slug) ? await load({ listing: slug }) : null;
   if (!d) { app.innerHTML = '<div class="wrap"><h1 style="padding-top:40px">This listing isn’t available</h1><p class="muted">It may have sold or the agent unpublished it.</p></div>'; return; }
   const l = d.listing, a = d.agent || {}, oh = d.open_house;
-  if (a.primary_color && /^#[0-9a-f]{6}$/i.test(a.primary_color)) document.documentElement.style.setProperty('--terra', a.primary_color);
+  accent(a);
+  const from = new URLSearchParams(location.search).get('from');
+  const bio = /^[a-z0-9]{6,32}$/.test(from || '') ? from : a.bio_slug;
+  const top = '<div class="lbar">' + (bio ? '<a class="back" href="../agent/?a=' + encodeURIComponent(bio) + '">‹ ' + esc(a.display_name || 'Back') + '</a>' : '<span></span>') + madeWith() + '</div>';
   document.title = l.address_line + (l.city ? ', ' + l.city : '');
   const stats = [l.beds && l.beds + ' beds', l.baths && l.baths + ' baths', l.sqft && Number(l.sqft).toLocaleString('en-US') + ' sq ft'].filter(Boolean);
   const hero = l.video_url
@@ -41,7 +39,7 @@ const app = document.getElementById('app');
     ohBlock = '<div class="card"><span class="pill" style="margin:0 0 8px">OPEN HOUSE</span><div class="when">' + esc(s.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', timeZone: tz })) + ' · ' + esc(t(s)) + '–' + esc(t(e)) + '</div><a class="btn primary" href="../event/?e=' + encodeURIComponent(oh.slug) + '">Join the open house</a></div>';
   }
   const addr = [l.address_line, [l.city, l.state].filter(Boolean).join(', '), l.zip].filter(Boolean).join(' ');
-  app.innerHTML = hero + '<div class="wrap">' +
+  app.innerHTML = top + hero + '<div class="wrap">' +
     '<span class="pill">' + esc((l.status || 'active').replace('_', ' ').toUpperCase()) + '</span>' +
     '<h1>' + esc(l.address_line) + '</h1><div class="muted">' + esc([l.city, l.state].filter(Boolean).join(', ')) + '</div>' +
     '<div class="price">' + esc(money(l.price)) + '</div>' +
@@ -50,7 +48,8 @@ const app = document.getElementById('app');
     ohBlock + agentBlock(a) +
     (l.description ? '<div class="card"><h2>About this home</h2><p style="white-space:pre-line">' + esc(l.description) + '</p></div>' : '') +
     (l.photos.length > 1 ? '<div class="grid">' + l.photos.slice(1).map((p) => '<img src="' + esc(p) + '" alt="" loading="lazy">').join('') + '</div>' : '') +
-    (a.bio_slug ? '<p style="margin-top:24px"><a href="../agent/?a=' + encodeURIComponent(a.bio_slug) + '">More homes from ' + esc(a.display_name || 'this agent') + ' →</a></p>' : '') +
-    '<p class="small" style="margin-top:24px">Information deemed reliable but not guaranteed. Made with Reeltors · <a href="../privacy/">Privacy</a></p></div>';
+    leadForm({ listing: slug }, a, 'Want more details or a private showing?') +
+    (bio ? '<p style="margin-top:24px"><a href="../agent/?a=' + encodeURIComponent(bio) + '">More homes from ' + esc(a.display_name || 'this agent') + ' →</a></p>' : '') +
+    '<p class="small" style="margin-top:24px">Information deemed reliable but not guaranteed. · <a href="../privacy/">Privacy</a></p>' + madeWith('center') + '</div>';
 })();
 </script></body></html>

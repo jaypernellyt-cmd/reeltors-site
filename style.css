@@ -34,3 +34,6 @@ a { color: var(--sage); }
 .lcard { display:block; text-decoration:none; color:inherit; background:#fff; border-radius:22px; overflow:hidden; border:1px solid var(--line); }
 .lcard img { width:100%; aspect-ratio:16/10; object-fit:cover; display:block; background:var(--line); }
 .lcard div { padding:14px 16px; }
+.lbar { position:sticky; top:0; z-index:5; display:flex; align-items:center; justify-content:space-between; padding:10px 14px; background:rgba(255,255,255,.88); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); }
+.lbar .back { font-weight:700; text-decoration:none; color:var(--ink); max-width:55%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.wrap .join { margin: 18px 0 0; }

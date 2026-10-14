@@ -1,38 +1,50 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Homes for sale</title><link rel="stylesheet" href="../style.css" /></head>
-<body><main id="app"><div class="wrap"><p class="muted" style="padding-top:40px">Loading…</p></div></main>
+<html lang="en"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#ffffff" />
+<title>Homes for sale</title><link rel="stylesheet" href="../bio.css" /></head>
+<body class="bio"><main id="app" class="page"><p style="padding:60px 20px;color:#6B7390;text-align:center">Loading…</p></main>
+<script src="../common.js"></script>
 <script>
-const FN = 'https://avckdteyshfwxndzrgnc.supabase.co/functions/v1/listing-page';
-const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF2Y2tkdGV5c2hmd3huZHpyZ25jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE5ODcxODIsImV4cCI6MjEwNzU2MzE4Mn0.0CipJcXlctwghglZQN5EM84xPmxp23TBRwq37s5xPB0';
-const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
-const money = (n) => (n ? '$' + Math.round(n).toLocaleString('en-US') : '');
-const safe = (u) => (/^https:\/\//i.test(u || '') ? u : null);
-const load = (body) => fetch(FN, { method: 'POST', headers: { apikey: ANON, 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
-function agentBlock(a) {
-  if (!a) return '';
-  const book = safe(a.booking_url);
-  const phone = a.phone ? a.phone.replace(/[^0-9+]/g, '') : '';
-  return '<div class="card"><div class="agent">' + (a.headshot_url ? '<img src="' + esc(a.headshot_url) + '" alt="">' : '<div class="ph"></div>') +
-    '<div><h2 style="margin:0">' + esc(a.display_name || 'Your agent') + '</h2><div class="muted">' + esc([a.title, a.company_name].filter(Boolean).join(' · ')) + '</div></div></div>' +
-    (book ? '<a class="btn primary" href="' + esc(book) + '">Schedule a call</a>' : phone ? '<a class="btn primary" href="tel:' + esc(phone) + '">Call ' + esc(a.phone) + '</a>' : '') +
-    (phone ? '<a class="btn ghost" href="sms:' + esc(phone) + '">Text me</a>' : '') +
-    (a.email ? '<a class="btn ghost" href="mailto:' + esc(a.email) + '">Email me</a>' : '') +
-    (a.license_number ? '<p class="small">License ' + esc(a.license_number) + (a.broker_name ? ' · Broker: ' + esc(a.broker_name) : '') + '</p>' : '') +
-    '<p class="small">' + (safe(a.iabs_url) ? '<a href="' + esc(a.iabs_url) + '">Information About Brokerage Services</a>' : '') + (safe(a.consumer_protection_url) ? ' · <a href="' + esc(a.consumer_protection_url) + '">Consumer Protection Notice</a>' : '') + '</p>' +
-    (a.disclosures ? '<p class="small">' + esc(a.disclosures) + '</p>' : '') + (a.equal_housing ? '<p class="small">Equal Housing Opportunity</p>' : '') + '</div>';
-}
 const slug = new URLSearchParams(location.search).get('a') || '';
 const app = document.getElementById('app');
+const share = () => (navigator.share ? navigator.share({ title: document.title, url: location.href }).catch(() => {}) : navigator.clipboard && navigator.clipboard.writeText(location.href).then(() => alert('Link copied')));
+
+function homeCard(l) {
+  const meta = [l.beds && l.beds + ' bd', l.baths && l.baths + ' ba', l.sqft && Number(l.sqft).toLocaleString('en-US') + ' sq ft'].filter(Boolean).join(' · ');
+  const tag = { active: 'FOR SALE', coming_soon: 'COMING SOON', pending: 'PENDING', sold: 'SOLD' }[l.status] || 'FOR SALE';
+  return '<a class="home" href="../listing/?l=' + encodeURIComponent(l.slug) + '&from=' + encodeURIComponent(slug) + '">' +
+    '<div class="ph">' + (l.cover_url ? '<img src="' + esc(l.cover_url) + '" alt="" loading="lazy">' : '') + '<span class="tag">' + tag + '</span></div>' +
+    '<div class="info"><div class="price">' + esc(money(l.price) || 'Price on request') + '</div><div class="addr">' + esc(l.address_line) + '</div><div class="meta">' + esc([l.city, meta].filter(Boolean).join(' · ')) + '</div></div></a>';
+}
+
 (async () => {
   const d = /^[a-z0-9]{6,32}$/.test(slug) ? await load({ agent: slug }) : null;
-  if (!d) { app.innerHTML = '<div class="wrap"><h1 style="padding-top:40px">This page isn’t available</h1></div>'; return; }
+  if (!d) { app.innerHTML = '<div class="topbar">' + madeWith() + '</div><div class="bhero"><h1>This page isn’t available</h1><p class="sub">The link may be old or turned off.</p></div>'; return; }
   const a = d.agent || {};
-  if (a.primary_color && /^#[0-9a-f]{6}$/i.test(a.primary_color)) document.documentElement.style.setProperty('--terra', a.primary_color);
-  document.title = (a.display_name || 'Homes') + ' · Homes for sale';
-  app.innerHTML = '<div class="wrap" style="padding-top:28px">' + agentBlock(a) +
-    '<h1 style="margin-top:24px">Homes for sale</h1>' +
-    (d.listings.length ? '<div class="cards">' + d.listings.map((l) => '<a class="lcard" href="../listing/?l=' + encodeURIComponent(l.slug) + '">' + (l.cover_url ? '<img src="' + esc(l.cover_url) + '" alt="" loading="lazy">' : '') + '<div><div class="price" style="font-size:24px;margin:0">' + esc(money(l.price)) + '</div><div><b>' + esc(l.address_line) + '</b></div><div class="muted">' + esc([l.city, l.beds && l.beds + ' bd', l.baths && l.baths + ' ba', l.sqft && Number(l.sqft).toLocaleString('en-US') + ' sq ft'].filter(Boolean).join(' · ')) + '</div></div></a>').join('') + '</div>' : '<p class="muted">No published listings right now.</p>') +
-    '<p class="small" style="margin-top:24px">Made with Reeltors · <a href="../privacy/">Privacy</a></p></div>';
+  accent(a);
+  document.title = (a.display_name || 'Homes') + (a.company_name ? ' · ' + a.company_name : '');
+  const phone = a.phone ? a.phone.replace(/[^0-9+]/g, '') : '';
+  const book = safe(a.booking_url);
+  const actions = [
+    book ? '<a class="primary" href="' + esc(book) + '" target="_blank" rel="noopener">Schedule a call</a>' : phone ? '<a class="primary" href="tel:' + esc(phone) + '">Call me</a>' : '',
+    phone ? '<a class="ghost" href="sms:' + esc(phone) + '">Text me</a>' : '',
+    phone && book ? '<a class="ghost" href="tel:' + esc(phone) + '">Call</a>' : a.email ? '<a class="ghost" href="mailto:' + esc(a.email) + '">Email me</a>' : '',
+  ].filter(Boolean).join('');
+  const listings = d.listings || [];
+  app.innerHTML =
+    '<div class="topbar">' + madeWith() + '<button class="iconbtn" aria-label="Share" onclick="share()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3v12M7 8l5-5 5 5"/><path d="M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg></button></div>' +
+    '<section class="bhero">' + (a.headshot_url ? '<img class="avatar" src="' + esc(a.headshot_url) + '" alt="">' : '') +
+      '<h1>' + esc(a.display_name || 'Your agent') + '</h1>' +
+      '<div class="sub">' + esc([a.title, a.company_name].filter(Boolean).join(' · ')) + '</div>' +
+      (a.bio_text ? '<p class="about">' + esc(a.bio_text) + '</p>' : '') +
+      socialButtons(a) + '</section>' +
+    (actions ? '<div class="actions">' + actions + '</div>' : '') +
+    '<section class="section"><div class="head"><h2>My listings</h2>' + (listings.length > 1 ? '<div class="arrows"><button aria-label="Previous" onclick="document.getElementById(\'rail\').scrollBy({left:-280,behavior:\'smooth\'})">‹</button><button aria-label="Next" onclick="document.getElementById(\'rail\').scrollBy({left:280,behavior:\'smooth\'})">›</button></div>' : '') + '</div>' +
+      (listings.length ? '<div class="rail" id="rail">' + listings.map(homeCard).join('') + '</div>' : '<div class="empty">New listings are on the way. Sign up below and you’ll hear first.</div>') +
+    '</section>' +
+    leadForm({ agent: slug }, a, 'Get new listings before anyone else') +
+    compliance(a) +
+    madeWith('center') +
+    '<p class="foot"><a href="../privacy/">Privacy</a></p>';
 })();
 </script></body></html>
