@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Open House</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+<main id="app"><div class="wrap"><p class="muted" style="padding-top:40px">Loading…</p></div></main>
+<script>
+// Public event page: reads one open house by its unguessable slug via a
+// security-definer RPC (anon key is public by design; RLS protects all tables).
+const SUPABASE_URL = 'https://avckdteyshfwxndzrgnc.supabase.co';
+const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF2Y2tkdGV5c2hmd3huZHpyZ25jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE5ODcxODIsImV4cCI6MjEwNzU2MzE4Mn0.0CipJcXlctwghglZQN5EM84xPmxp23TBRwq37s5xPB0';
+const CONSENT = 'I agree that the listing agent may contact me about this property and related real estate services by phone, text or email. Consent is not required to attend. Message and data rates may apply. You can opt out at any time.';
+const slug = new URLSearchParams(location.search).get('e') || '';
+const app = document.getElementById('app');
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+const rpc = (fn, body) => fetch(SUPABASE_URL + '/rest/v1/rpc/' + fn, { method: 'POST', headers: { apikey: ANON, Authorization: 'Bearer ' + ANON, 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+const money = (n) => (n ? '$' + Math.round(n).toLocaleString('en-US') : '');
+const safeUrl = (u) => (/^https:\/\//i.test(u || '') ? u : null);
+
+async function load() {
+  if (!/^[a-z0-9]{6,32}$/.test(slug)) return notFound();
+  const res = await rpc('get_public_open_house', { p_slug: slug });
+  const rows = res.ok ? await res.json() : [];
+  if (!rows.length) return notFound();
+  render(rows[0]);
+}
+
+function notFound() {
+  app.innerHTML = '<div class="wrap"><h1 style="padding-top:40px">This open house isn’t available</h1><p class="muted">The link may have expired. Contact the listing agent for details.</p></div>';
+}
+
+function render(o) {
+  const tz = o.timezone || 'America/Chicago';
+  const s = new Date(o.starts_at), e = new Date(o.ends_at);
+  const date = s.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', timeZone: tz });
+  const t = (d) => d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: tz }).replace(':00', '');
+  const addr = [o.address_line, [o.city, o.state].filter(Boolean).join(', '), o.zip].filter(Boolean).join(' ');
+  const stats = [o.beds && o.beds + ' beds', o.baths && o.baths + ' baths', o.sqft && Number(o.sqft).toLocaleString('en-US') + ' sq ft'].filter(Boolean).join(' · ');
+  const maps = 'https://maps.apple.com/?q=' + encodeURIComponent(addr);
+  const iabs = safeUrl(o.iabs_url), cpn = safeUrl(o.consumer_protection_url);
+  document.title = 'Open House · ' + o.address_line;
+  app.innerHTML = `
+    ${o.hero_url ? '<img class="hero" src="' + esc(o.hero_url) + '" alt="Photo of ' + esc(o.address_line) + '" />' : ''}
+    <div class="wrap">
+      <span class="pill">OPEN HOUSE</span>
+      <h1>${esc(o.address_line)}</h1>
+      <div class="when">${esc(date)} · ${esc(t(s))} – ${esc(t(e))}</div>
+      <div class="muted">${esc([o.city, o.state].filter(Boolean).join(', '))} ${o.price ? '· ' + esc(money(o.price)) : ''} ${stats ? '· ' + esc(stats) : ''}</div>
+      <p><a href="${maps}">Get directions</a></p>
+      ${o.notes ? '<p>' + esc(o.notes) + '</p>' : ''}
+      ${o.signin_enabled ? `
+      <form class="card" id="f">
+        <h2>Sign in</h2>
+        <p class="small">Signing in helps the host follow up with details you ask for. It’s optional.</p>
+        <label for="n">Name</label><input id="n" type="text" autocomplete="name" required maxlength="100" />
+        <label for="em">Email (optional)</label><input id="em" type="email" autocomplete="email" maxlength="254" />
+        <label for="ph">Phone (optional)</label><input id="ph" type="tel" autocomplete="tel" maxlength="40" />
+        <label>Are you working with an agent?</label>
+        <div class="row"><label class="opt"><input type="radio" name="ag" value="yes" /> Yes</label><label class="opt"><input type="radio" name="ag" value="no" /> No</label></div>
+        <div class="check"><input id="c" type="checkbox" /><label for="c" style="margin:0;font-weight:400;color:inherit">${esc(CONSENT)}</label></div>
+        <button id="b" type="submit">Sign in</button>
+        <p class="small" id="msg" role="status"></p>
+      </form>` : ''}
+      <div class="card">
+        <h2>Hosted by ${esc(o.agent_name || 'the listing agent')}</h2>
+        <div>${esc(o.agent_company || '')}</div>
+        ${o.agent_phone ? '<div><a href="tel:' + esc(o.agent_phone) + '">' + esc(o.agent_phone) + '</a></div>' : ''}
+        ${o.agent_email ? '<div><a href="mailto:' + esc(o.agent_email) + '">' + esc(o.agent_email) + '</a></div>' : ''}
+        ${o.agent_license ? '<div class="small">License ' + esc(o.agent_license) + '</div>' : ''}
+        ${o.broker_name ? '<div class="small">Broker: ' + esc(o.broker_name) + '</div>' : ''}
+        <p class="small">${iabs ? '<a href="' + esc(iabs) + '">Information About Brokerage Services</a>' : ''}${iabs && cpn ? ' · ' : ''}${cpn ? '<a href="' + esc(cpn) + '">Consumer Protection Notice</a>' : ''}</p>
+        ${o.disclosures ? '<p class="small">' + esc(o.disclosures) + '</p>' : ''}
+      </div>
+      <p class="small" style="margin-top:24px">Made with Reeltors · <a href="../privacy/">Privacy</a></p>
+    </div>`;
+  const f = document.getElementById('f');
+  if (f) f.addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    const b = document.getElementById('b'), msg = document.getElementById('msg');
+    const consent = document.getElementById('c').checked;
+    const ag = (document.querySelector('input[name=ag]:checked') || {}).value;
+    b.disabled = true; msg.textContent = '';
+    const r = await rpc('submit_open_house_signin', {
+      p_slug: slug, p_name: document.getElementById('n').value, p_email: document.getElementById('em').value, p_phone: document.getElementById('ph').value,
+      p_working_with_agent: ag === 'yes' ? true : ag === 'no' ? false : null, p_consent: consent, p_consent_text: consent ? CONSENT : 'No consent to contact given', p_source: 'web',
+    });
+    if (r.ok) { f.classList.add('ok'); f.innerHTML = '<h2>Thanks for signing in!</h2><p>Enjoy the tour.</p>'; }
+    else { const j = await r.json().catch(() => ({})); msg.textContent = j.message || 'Something went wrong. Please try again.'; b.disabled = false; }
+  });
+}
+load();
+</script>
+</body>
+</html>
